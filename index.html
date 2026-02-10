@@ -1,1108 +1,619 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Ассистент (Gemini)</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --input-bg: #ffffff;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --radius: 0.75rem;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Транскрибация и Озвучка Видео</title>
 
-        .dark {
-            --primary: #3b82f6;
-            --primary-hover: #60a5fa;
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border-color: #334155;
-            --input-bg: #0f172a;
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' }
+          }
         }
+      }
+    }
+  </script>
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            transition: background-color 0.3s, color 0.3s;
-            line-height: 1.5;
-            min-height: 100vh;
-            padding: 1rem;
-        }
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-        .container { max-width: 1200px; margin: 0 auto; }
-
-        header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 2rem;
-            position: relative;
-        }
-        
-        .header-controls {
-            position: absolute;
-            top: 0;
-            right: 0;
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .theme-toggle, .stop-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 0.5rem;
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .theme-toggle:hover { background: var(--border-color); }
-        
-        .stop-btn { color: var(--danger); border-color: var(--danger); opacity: 0.8; }
-        .stop-btn:hover { background: var(--danger); color: white; opacity: 1; }
-
-        .logo-box {
-            background: var(--primary);
-            color: white;
-            padding: 0.75rem;
-            border-radius: 1rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1rem;
-            display: inline-flex;
-        }
-
-        h1 { font-size: 1.875rem; font-weight: 700; text-align: center; }
-        .subtitle { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem; }
-        .model-badge { 
-            background: var(--border-color); 
-            padding: 0.25rem 0.5rem; 
-            border-radius: 0.25rem; 
-            font-size: 0.75rem; 
-            margin-top: 0.5rem; 
-            font-family: monospace;
-            color: var(--text-muted);
-        }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1.5rem;
-        }
-
-        .label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-main); }
-        
-        input[type="text"], input[type="password"], input[type="url"], select {
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            border: 1px solid var(--border-color);
-            background: var(--input-bg);
-            color: var(--text-main);
-            font-size: 0.875rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        input:focus { border-color: var(--primary); }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: 0.2s;
-            font-size: 0.875rem;
-        }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
-        
-        .btn-danger { background: var(--danger); color: white; width: 100%; }
-        .btn-danger:hover { background: #dc2626; }
-
-        .btn-icon { padding: 0.5rem; background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); }
-        .btn-icon:hover { color: var(--text-main); background: var(--border-color); }
-
-        .upload-area {
-            border: 2px dashed var(--border-color);
-            border-radius: var(--radius);
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-            position: relative;
-        }
-        .upload-area:hover { border-color: var(--primary); background: rgba(37, 99, 235, 0.05); }
-        .upload-area.dragover { border-color: var(--primary); background: rgba(37, 99, 235, 0.1); }
-        .upload-area input[type="file"] { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
-        
-        video { width: 100%; max-height: 300px; border-radius: 0.5rem; margin-top: 1rem; background: black; display: none; }
-
-        .grid { display: grid; gap: 1.5rem; }
-        @media (min-width: 1024px) {
-            .grid { grid-template-columns: 5fr 7fr; }
-        }
-
-        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; }
-        .result-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; }
-        textarea.result-text {
-            width: 100%;
-            min-height: 200px;
-            padding: 0.75rem;
-            background: var(--bg-color);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            resize: vertical;
-            font-family: monospace;
-            margin-bottom: 0.5rem;
-        }
-        .action-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; align-items: center; }
-        
-        .checkbox-wrapper { display: flex; align-items: center; gap: 0.5rem; margin-right: auto; cursor: pointer; font-size: 0.875rem; color: var(--text-muted); user-select: none; }
-        .checkbox-wrapper input { margin: 0; width: auto; cursor: pointer; }
-
-        .toast-container { position: fixed; bottom: 1rem; right: 1rem; z-index: 50; display: flex; flex-direction: column; gap: 0.5rem; }
-        .toast {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            background: var(--card-bg);
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary);
-            font-size: 0.875rem;
-            color: var(--text-main);
-            animation: slideIn 0.3s ease;
-            max-width: 300px;
-        }
-        .toast.error { border-left-color: var(--danger); }
-        .toast.success { border-left-color: var(--success); }
-        .toast.warning { border-left-color: var(--warning); }
-        
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-        .spinner {
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 2px solid #fff;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .hidden { display: none !important; }
-        .text-sm { font-size: 0.8rem; }
-        .mt-4 { margin-top: 1rem; }
-        
-        .alert-box {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: var(--danger);
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 0.8rem;
-            display: none;
-        }
-
-        .info-box {
-            background: rgba(37, 99, 235, 0.1);
-            border: 1px solid rgba(37, 99, 235, 0.2);
-            color: var(--primary);
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 0.8rem;
-        }
-
-        .warning-box {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-            color: var(--warning);
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 0.8rem;
-        }
-
-        .file-status {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-top: 0.75rem;
-            font-size: 0.75rem;
-            font-family: monospace;
-            color: var(--text-muted);
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .url-fallback {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border-color);
-        }
-    </style>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin-custom { animation: spin 1s linear infinite; }
+  </style>
 </head>
-<body>
 
-<div class="container">
-    <header>
-        <div class="header-controls">
-            <button class="stop-btn" id="stopAudioBtn" title="Остановить звук">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-            </button>
-            <button class="theme-toggle" id="themeBtn" aria-label="Toggle Theme">
-            </button>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors">
+  <div id="app" class="min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+
+      <header class="text-center mb-8 relative">
+        <div class="absolute right-0 top-0 flex gap-2">
+          <button id="btn-theme" class="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700">
+            <i data-lucide="moon" class="w-4 h-4" id="icon-dark"></i>
+            <i data-lucide="sun" class="w-4 h-4 hidden" id="icon-light"></i>
+          </button>
         </div>
-        
-        <div class="logo-box">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <div class="inline-flex p-3 bg-indigo-600 rounded-2xl shadow-lg mb-4">
+          <i data-lucide="mic" class="w-8 h-8 text-white"></i>
         </div>
-        <h1>AI Ассистент</h1>
-        <p class="subtitle">Умный перевод и транскрипция</p>
-        <span id="modelBadge" class="model-badge">Model: gemini-1.5-flash</span>
-    </header>
+        <h1 class="text-3xl font-bold text-slate-800 dark:text-white">Транскрибация и Озвучка</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-2">Перевод с немецкого на русский</p>
+      </header>
 
-    <div class="card">
-        <label class="label" for="apiKey">Gemini API Key</label>
-        <div style="display: flex; gap: 0.5rem;">
-            <input type="password" id="apiKey" placeholder="Вставьте ваш ключ API (начинается с AIza...)">
-            <button class="btn btn-icon" id="saveKeyBtn" title="Сохранить">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            </button>
+      <div class="max-w-lg mx-auto mb-8 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+            <i data-lucide="key" class="w-3 h-3 inline"></i> API Key
+          </label>
+          <span id="key-status" class="text-xs text-slate-400">Не сохранён</span>
         </div>
-        <p class="text-sm" style="color: var(--text-muted); margin-top: 0.5rem;">Ключ сохраняется локально.</p>
-    </div>
+        <div class="flex gap-2">
+          <input type="password" id="api-key" placeholder="Gemini API Key"
+            class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          <button id="btn-save-key" class="px-4 py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-slate-700 dark:hover:bg-indigo-500">
+            Сохранить
+          </button>
+        </div>
+        <p class="text-xs text-slate-400 mt-2">Ключ сохраняется в localStorage браузера</p>
+      </div>
 
-    <div class="grid">
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-            <div class="card" style="margin-bottom: 0;">
-                <h3 class="label">Загрузка Медиа</h3>
-                
-                <div id="sandboxWarning" class="warning-box" style="display: none;">
-                    ⚠️ This environment may block file uploads. Download and open index.html in your browser to test.
-                </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                <div id="errorAlert" class="alert-box"></div>
-                
-                <div class="upload-area" id="dropZone">
-                    <input type="file" id="fileInput" accept="video/*,audio/*">
-                    <div style="pointer-events: none;">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 0.5rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                        <p id="fileName" style="font-weight: 500;">Нажмите или перетащите файл</p>
-                        <p class="text-sm" style="color: var(--text-muted);">Видео или Аудио (макс. 10MB)</p>
-                    </div>
-                </div>
+        <div class="lg:col-span-5 space-y-4">
+          <div id="upload-area" class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 bg-white dark:bg-slate-800 min-h-[400px] flex flex-col">
 
-                <div id="fileStatus" class="file-status" style="display: none;"></div>
-                
-                <video id="videoPreview" controls></video>
+            <label id="upload-label" class="flex flex-col items-center justify-center cursor-pointer flex-1">
+              <i data-lucide="upload" class="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4"></i>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Выберите видео (макс. 20MB)</span>
+              <input type="file" id="file-input" class="hidden" accept="video/*">
+            </label>
 
-                <div class="url-fallback">
-                    <label class="label" for="mediaUrl">Or Load from URL</label>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <input type="url" id="mediaUrl" placeholder="https://example.com/video.mp4">
-                        <button class="btn btn-icon" id="loadUrlBtn" title="Load">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        </button>
-                    </div>
-                    <p class="text-sm" style="color: var(--text-muted); margin-top: 0.25rem;">Public CORS-enabled URL to video/audio</p>
-                </div>
-                
-                <div class="mt-4">
-                    <button id="transcribeBtn" class="btn btn-primary" disabled>
-                        <span>Начать анализ</span>
-                    </button>
-                </div>
-                <p id="statusText" class="text-sm mt-4" style="text-align: center; color: var(--text-muted); min-height: 1.5rem;"></p>
-            </div>
-
-            <div class="card" style="margin-bottom: 0;">
-                <h3 class="label">Текст в речь (Paste & Speak)</h3>
-                <textarea id="tts-input" class="result-text" style="min-height: 120px;" placeholder="Вставьте любой текст (Deutsch, English, Русский, Azərbaycanca, Türkçe)..."></textarea>
-                
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <button id="btn-paste" class="btn" style="background: var(--border-color); color: var(--text-main); flex: 1; justify-content: center;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-                        Вставить
-                    </button>
-                    <button id="btn-clear-tts" class="btn btn-icon" title="Очистить" style="width: auto;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
-                </div>
-
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <select id="tts-lang" style="flex: 1;">
-                        <option value="auto">Авто-определение</option>
-                        <option value="de">Deutsch</option>
-                        <option value="en">English</option>
-                        <option value="ru">Русский</option>
-                        <option value="az">Azərbaycanca</option>
-                        <option value="tr">Türkçe</option>
-                    </select>
-                </div>
-                
-                <div style="margin-bottom: 0.75rem;">
-                     <select id="tts-voice" style="width: 100%;"></select>
-                </div>
-
-                <button id="btn-speak-tts" class="btn btn-primary" style="width: 100%;">
-                    Озвучить текст
+            <div id="file-info" class="hidden flex-col flex-1 space-y-4">
+              <div class="flex justify-between items-center">
+                <p class="text-xs font-bold text-slate-400 uppercase">Файл выбран</p>
+                <button id="btn-remove" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
+                  <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
                 </button>
-            </div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <div class="card" style="margin-bottom: 0;">
-                <div class="result-header">
-                    <div class="result-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-                        Транскрипция (DE)
-                    </div>
-                    <button class="btn btn-icon" onclick="copyText('transcriptionOutput')" title="Копировать">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg">
+                  <i data-lucide="file-video" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
                 </div>
-                <textarea id="transcriptionOutput" class="result-text" placeholder="Здесь появится немецкий текст..." readonly></textarea>
-                <div class="action-row">
-                    <select id="voiceDE" style="flex: 1; margin-right: 0.5rem;"></select>
-                    <button id="speakBtnDE" class="btn" style="background: var(--border-color); color: var(--text-main);" onclick="speak('transcriptionOutput', 'voiceDE', 'de-DE', 'speakBtnDE')">
-                        Озвучить
-                    </button>
+                <div class="flex-1 min-w-0">
+                  <p id="file-name" class="text-sm font-medium text-slate-700 dark:text-slate-300 truncate"></p>
+                  <p id="file-size" class="text-xs text-slate-400"></p>
                 </div>
+              </div>
+              <div class="bg-slate-900 rounded-xl overflow-hidden flex-1 flex items-center justify-center">
+                <video id="video-preview" class="w-full h-full object-contain" controls></video>
+              </div>
+              <button id="btn-transcribe" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg">
+                <span class="flex items-center justify-center gap-2">
+                  <i data-lucide="sparkles" class="w-5 h-5"></i>
+                  <span>Транскрибировать</span>
+                </span>
+              </button>
             </div>
 
-            <div class="card" style="margin-bottom: 0;">
-                <div class="result-header">
-                    <div class="result-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 8 5 5 5-5"/><path d="M12 13v10"/><path d="m5 3 5 5 5-5"/><path d="M12 8v5"/></svg>
-                        Перевод (RU)
-                    </div>
-                    <button class="btn btn-icon" onclick="copyText('translationOutput')" title="Копировать">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
-                </div>
-                <textarea id="translationOutput" class="result-text" placeholder="Здесь появится интеллектуальный перевод..." readonly></textarea>
-                <div class="action-row">
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="autoSpeakRU"> Авто-озвучка
-                    </label>
-                    <select id="voiceRU" style="width: 200px; margin-right: 0.5rem;"></select>
-                    <button id="speakBtnRU" class="btn" style="background: var(--border-color); color: var(--text-main);" onclick="speak('translationOutput', 'voiceRU', 'ru-RU', 'speakBtnRU')">
-                        Озвучить
-                    </button>
-                </div>
+            <div id="processing" class="hidden flex-col items-center justify-center flex-1">
+              <div class="relative w-16 h-16 mb-4">
+                <div class="absolute inset-0 border-4 border-slate-200 dark:border-slate-700 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin-custom"></div>
+              </div>
+              <p id="process-text" class="text-sm text-slate-600 dark:text-slate-400 font-medium"></p>
             </div>
+          </div>
         </div>
+
+        <div class="lg:col-span-7 space-y-4">
+
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                <i data-lucide="text" class="w-5 h-5 text-slate-400"></i>
+                Транскрипция (DE)
+              </h2>
+              <button id="btn-copy-src" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg disabled:opacity-30" disabled>
+                <i data-lucide="copy" class="w-4 h-4 text-slate-400"></i>
+              </button>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 min-h-[200px] max-h-[300px] overflow-y-auto border border-slate-200 dark:border-slate-700">
+              <p id="transcription-text" class="text-sm text-slate-400 dark:text-slate-600 italic">Результат появится здесь...</p>
+            </div>
+            <div class="mt-4 space-y-3">
+              <div class="flex gap-2">
+                <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase flex-shrink-0 pt-2">Голос (DE)</label>
+                <select id="voice-de" class="flex-1 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-lg">
+                  <option value="de-DE-FlorianMultilingualNeural">Немецкий (Florian)</option>
+                  <option value="de-DE-SeraphinaMultilingualNeural">Немецкий (Seraphina)</option>
+                  <option value="de-DE-ConradNeural">Немецкий (Conrad)</option>
+                  <option value="de-DE-KatjaNeural">Немецкий (Katja)</option>
+                </select>
+              </div>
+              <button id="btn-speak-de" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed" disabled>
+                <span class="flex items-center justify-center gap-2">
+                  <i data-lucide="volume-2" class="w-4 h-4" id="icon-speak-de"></i>
+                  <i data-lucide="loader-2" class="w-4 h-4 hidden animate-spin-custom" id="loader-de"></i>
+                  <span id="text-speak-de">Озвучить (DE)</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                <i data-lucide="languages" class="w-5 h-5 text-slate-400"></i>
+                Перевод (RU)
+              </h2>
+              <button id="btn-copy-ru" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg disabled:opacity-30" disabled>
+                <i data-lucide="copy" class="w-4 h-4 text-slate-400"></i>
+              </button>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 min-h-[200px] max-h-[300px] overflow-y-auto border border-slate-200 dark:border-slate-700">
+              <p id="translation-text" class="text-sm text-slate-400 dark:text-slate-600 italic">Результат появится здесь...</p>
+            </div>
+            <div class="mt-4 space-y-3">
+              <div class="flex gap-2">
+                <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase flex-shrink-0 pt-2">Голос (RU)</label>
+                <select id="voice-ru" class="flex-1 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-lg">
+                  <option value="ru-RU-DmitryNeural">Русский (Дмитрий)</option>
+                  <option value="ru-RU-SvetlanaNeural">Русский (Светлана)</option>
+                  <option value="ru-RU-DariyaNeural">Русский (Дария)</option>
+                </select>
+              </div>
+              <button id="btn-speak-ru" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed" disabled>
+                <span class="flex items-center justify-center gap-2">
+                  <i data-lucide="volume-2" class="w-4 h-4" id="icon-speak-ru"></i>
+                  <i data-lucide="loader-2" class="w-4 h-4 hidden animate-spin-custom" id="loader-ru"></i>
+                  <span id="text-speak-ru">Озвучить (RU)</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <footer class="mt-12 text-center text-xs text-slate-400">
+        <p>Транскрибация: <strong>Gemini API</strong> • Озвучка: <strong>Edge-TTS</strong></p>
+      </footer>
+
     </div>
-    
-    <footer style="margin-top: 3rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">
-        <p>Powered by Google Gemini API & Web Speech API</p>
-    </footer>
-</div>
+  </div>
 
-<div id="toastContainer" class="toast-container"></div>
+  <script>
+    lucide.createIcons();
 
-<script>
-    console.log('[INIT] Application starting...');
-    
-    const MAX_SIZE_MB = 10;
-    const GEMINI_MODEL = 'gemini-1.5-flash';
-    
-    let synth = window.speechSynthesis;
-    let isTTSManualSpeaking = false;
-    let activeAudioContext = null;
-    let activeSourceNode = null;
-    let selectedFile = null;
+    const state = {
+      apiKey: localStorage.getItem('gemini-api-key') || '',
+      file: null,
+      transcription: '',
+      translation: '',
+      isDark: localStorage.getItem('theme') === 'dark',
+      currentAudio: null,
+      isSpeaking: false
+    };
 
+    const $ = (id) => document.getElementById(id);
     const els = {
-        themeBtn: document.getElementById('themeBtn'),
-        stopAudioBtn: document.getElementById('stopAudioBtn'),
-        apiKey: document.getElementById('apiKey'),
-        saveKeyBtn: document.getElementById('saveKeyBtn'),
-        fileInput: document.getElementById('fileInput'),
-        fileName: document.getElementById('fileName'),
-        dropZone: document.getElementById('dropZone'),
-        videoPreview: document.getElementById('videoPreview'),
-        transcribeBtn: document.getElementById('transcribeBtn'),
-        statusText: document.getElementById('statusText'),
-        transcriptionOutput: document.getElementById('transcriptionOutput'),
-        translationOutput: document.getElementById('translationOutput'),
-        voiceDE: document.getElementById('voiceDE'),
-        voiceRU: document.getElementById('voiceRU'),
-        autoSpeakRU: document.getElementById('autoSpeakRU'),
-        errorAlert: document.getElementById('errorAlert'),
-        sandboxWarning: document.getElementById('sandboxWarning'),
-        fileStatus: document.getElementById('fileStatus'),
-        mediaUrl: document.getElementById('mediaUrl'),
-        loadUrlBtn: document.getElementById('loadUrlBtn'),
-        ttsInput: document.getElementById('tts-input'),
-        btnPaste: document.getElementById('btn-paste'),
-        btnClearTTS: document.getElementById('btn-clear-tts'),
-        btnSpeakTTS: document.getElementById('btn-speak-tts'),
-        ttsLang: document.getElementById('tts-lang'),
-        ttsVoice: document.getElementById('tts-voice')
+      apiKey: $('api-key'),
+      btnSaveKey: $('btn-save-key'),
+      keyStatus: $('key-status'),
+      btnTheme: $('btn-theme'),
+      iconDark: $('icon-dark'),
+      iconLight: $('icon-light'),
+      fileInput: $('file-input'),
+      uploadLabel: $('upload-label'),
+      fileInfo: $('file-info'),
+      fileName: $('file-name'),
+      fileSize: $('file-size'),
+      btnRemove: $('btn-remove'),
+      videoPreview: $('video-preview'),
+      btnTranscribe: $('btn-transcribe'),
+      processing: $('processing'),
+      processText: $('process-text'),
+      transcriptionText: $('transcription-text'),
+      translationText: $('translation-text'),
+      btnCopySrc: $('btn-copy-src'),
+      btnCopyRu: $('btn-copy-ru'),
+      voiceDe: $('voice-de'),
+      voiceRu: $('voice-ru'),
+      btnSpeakDe: $('btn-speak-de'),
+      btnSpeakRu: $('btn-speak-ru'),
+      iconSpeakDe: $('icon-speak-de'),
+      iconSpeakRu: $('icon-speak-ru'),
+      loaderDe: $('loader-de'),
+      loaderRu: $('loader-ru'),
+      textSpeakDe: $('text-speak-de'),
+      textSpeakRu: $('text-speak-ru')
     };
 
-    const icons = {
-        moon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>',
-        sun: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>',
-        loader: '<div class="spinner"></div>'
-    };
-
-    function detectSandboxEnvironment() {
-        const isSandbox = window.location.href.includes('claude.ai') || 
-                         window.location.href.includes('anthropic.com') ||
-                         window.location.protocol === 'blob:';
-        console.log('[SANDBOX] Detection result:', isSandbox, 'URL:', window.location.href);
-        if (isSandbox) {
-            els.sandboxWarning.style.display = 'block';
-        }
+    if (state.isDark) {
+      document.documentElement.classList.add('dark');
+      els.iconDark.classList.add('hidden');
+      els.iconLight.classList.remove('hidden');
+    }
+    if (state.apiKey) {
+      els.apiKey.value = state.apiKey;
+      els.keyStatus.textContent = 'Сохранён';
+      els.keyStatus.classList.add('text-emerald-500');
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('[DOM] DOMContentLoaded event fired');
-        
-        detectSandboxEnvironment();
-        
-        const isDark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        if (isDark) document.body.classList.add('dark');
-        updateThemeIcon();
-
-        const savedKey = localStorage.getItem('gemini-api-key');
-        if (savedKey) {
-            els.apiKey.value = savedKey;
-            console.log('[INIT] Loaded saved API key');
-        }
-
-        loadVoices();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
-        
-        console.log('[INIT] Initialization complete');
+    els.btnSaveKey.addEventListener('click', () => {
+      const key = els.apiKey.value.trim();
+      if (!key) {
+        toast('Введите API Key', 'error');
+        return;
+      }
+      localStorage.setItem('gemini-api-key', key);
+      state.apiKey = key;
+      els.keyStatus.textContent = 'Сохранён';
+      els.keyStatus.classList.add('text-emerald-500');
+      toast('API Key сохранён', 'success');
     });
 
-    async function fetchWithRetry(url, options) {
-        let lastError;
-        const maxRetries = 3;
-        
-        for (let i = 0; i < maxRetries; i++) {
-            try {
-                const res = await fetch(url, options);
-                
-                if (res.ok) return await res.json();
-                
-                if (res.status < 500 && res.status !== 429) {
-                    const e = await res.json().catch(() => ({}));
-                    throw new Error(e.error?.message || res.statusText);
-                }
-                
-                throw new Error(`Server Error: ${res.status}`);
-            } catch (e) {
-                lastError = e;
-                if (!e.message.includes('Server Error') && !(e instanceof TypeError)) {
-                    throw e;
-                }
-                
-                if (i < maxRetries - 1) {
-                    const delay = Math.pow(2, i) * 1000;
-                    console.log(`[API] Retrying... Attempt ${i + 2}`);
-                    await new Promise(r => setTimeout(r, delay));
-                }
-            }
-        }
-        throw lastError;
-    }
-
-    async function callGemini(key, textPrompt, inlineData = null, mimeType = null) {
-        const parts = [{ text: textPrompt }];
-        
-        if (inlineData && mimeType) {
-            parts.push({
-                inline_data: {
-                    mime_type: mimeType,
-                    data: inlineData
-                }
-            });
-        }
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
-        const options = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ 
-                    parts: parts 
-                }] 
-            })
-        };
-
-        console.log('[API] Calling Gemini with prompt length:', textPrompt.length, 'has media:', !!inlineData);
-        return await fetchWithRetry(url, options);
-    }
-
-    els.transcribeBtn.addEventListener('click', async () => {
-        console.log('[TRANSCRIBE] Button clicked');
-        const apiKey = localStorage.getItem('gemini-api-key');
-        if (!apiKey) return showToast('Enter API Key first', 'error');
-        if (!selectedFile) return showToast('Select a file', 'error');
-
-        setProcessing(true);
-        stopAllAudio();
-        els.errorAlert.style.display = 'none';
-        els.transcriptionOutput.value = '';
-        els.translationOutput.value = '';
-
-        try {
-            updateStatus('Reading file...');
-            console.log('[TRANSCRIBE] Converting file to base64...');
-            const base64DataFull = await fileToBase64(selectedFile);
-            const base64Data = base64DataFull.split(',')[1];
-            console.log('[TRANSCRIBE] Base64 conversion complete, length:', base64Data.length);
-
-            updateStatus('Transcribing...');
-            const promptTranscribe = "You are an expert transcriber. Listen to this audio/video. Transcribe the spoken German content verbatim. Return ONLY the text, no intro/outro.";
-            
-            const transResp = await callGemini(apiKey, promptTranscribe, base64Data, selectedFile.type);
-            const transText = transResp.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            if (!transText) throw new Error("No text returned from API.");
-            els.transcriptionOutput.value = transText;
-            console.log('[TRANSCRIBE] Transcription complete, length:', transText.length);
-
-            updateStatus('Translating to Russian...');
-            const promptTranslate = `You are a professional interpreter. Translate this German text to Russian. Preserve tone and nuance.\n\n${transText}`;
-            
-            const transResp2 = await callGemini(apiKey, promptTranslate);
-            const transText2 = transResp2.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            if (!transText2) throw new Error("Translation failed.");
-            els.translationOutput.value = transText2;
-            console.log('[TRANSCRIBE] Translation complete, length:', transText2.length);
-
-            showToast('Done!', 'success');
-
-            if (els.autoSpeakRU.checked && transText2) {
-                setTimeout(() => speak('translationOutput', 'voiceRU', 'ru-RU', 'speakBtnRU'), 500);
-            }
-
-        } catch (error) {
-            console.error('[TRANSCRIBE] Error:', error);
-            const msg = error.message.toLowerCase();
-            let displayMsg = error.message;
-
-            if (msg.includes('404') || msg.includes('not found')) displayMsg = "Model Error (404): Try checking your API Key.";
-            else if (msg.includes('403')) displayMsg = "Access Denied (403): Invalid API Key.";
-            else if (msg.includes('400') || msg.includes('invalid argument')) displayMsg = "Bad Request (400): File format might be unsupported or payload incorrect.";
-            else if (msg.includes('server error')) displayMsg = "Server Error: Operation failed after retries. Please try again later.";
-
-            els.errorAlert.textContent = displayMsg;
-            els.errorAlert.style.display = 'block';
-            showToast("Operation Failed", 'error');
-        } finally {
-            setProcessing(false);
-            updateStatus('');
-        }
+    els.btnTheme.addEventListener('click', () => {
+      state.isDark = !state.isDark;
+      if (state.isDark) {
+        document.documentElement.classList.add('dark');
+        els.iconDark.classList.add('hidden');
+        els.iconLight.classList.remove('hidden');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        els.iconDark.classList.remove('hidden');
+        els.iconLight.classList.add('hidden');
+        localStorage.setItem('theme', 'light');
+      }
     });
-
-    els.themeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark');
-        localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
-        updateThemeIcon();
-    });
-
-    function updateThemeIcon() {
-        els.themeBtn.innerHTML = document.body.classList.contains('dark') ? icons.sun : icons.moon;
-    }
-
-    els.saveKeyBtn.addEventListener('click', () => {
-        const key = els.apiKey.value.trim();
-        if (key && key.startsWith('AIza')) {
-            localStorage.setItem('gemini-api-key', key);
-            showToast('API Key saved', 'success');
-        } else {
-            showToast('Invalid API Key format', 'error');
-        }
-    });
-
-    els.stopAudioBtn.addEventListener('click', stopAllAudio);
-
-    function stopAllAudio() {
-        if (synth.speaking) synth.cancel();
-        if (activeSourceNode) {
-            try { activeSourceNode.stop(); } catch (e) {}
-            activeSourceNode = null;
-        }
-        isTTSManualSpeaking = false;
-        resetTTSButtons();
-    }
-
-    function resetTTSButtons() {
-        els.btnSpeakTTS.textContent = "Озвучить текст";
-        els.btnSpeakTTS.classList.remove('btn-danger');
-        els.btnSpeakTTS.classList.add('btn-primary');
-    }
-
-    function setProcessing(isProcessing) {
-        els.transcribeBtn.disabled = isProcessing;
-        els.transcribeBtn.innerHTML = isProcessing ? `${icons.loader} Processing...` : 'Начать анализ';
-    }
-
-    function updateStatus(text) {
-        els.statusText.textContent = text;
-    }
-
-    function showToast(message, type = 'success') {
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        document.getElementById('toastContainer').appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-    }
-
-    window.copyText = (id) => {
-        const el = document.getElementById(id);
-        if (!el.value) return;
-        navigator.clipboard.writeText(el.value).then(() => showToast('Copied'));
-    };
-
-    function updateFileStatus(file) {
-        const status = `Selected file:
-Name: ${file.name}
-Type: ${file.type}
-Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
-Last Modified: ${new Date(file.lastModified).toLocaleString()}`;
-        
-        els.fileStatus.textContent = status;
-        els.fileStatus.style.display = 'block';
-        console.log('[FILE_STATUS] Updated:', status);
-    }
-
-    function handleFileSelection(file) {
-        console.log('[FILE] handleFileSelection called with file:', file?.name, file?.type, file?.size);
-        
-        if (!file) {
-            console.log('[FILE] No file provided');
-            return;
-        }
-
-        console.log('[FILE] Validating file size...');
-        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-            console.warn('[FILE] File too large:', file.size, 'max:', MAX_SIZE_MB * 1024 * 1024);
-            showToast(`File > ${MAX_SIZE_MB}MB`, 'error');
-            return;
-        }
-
-        console.log('[FILE] File validation passed');
-        selectedFile = file;
-        els.fileName.textContent = file.name;
-        els.transcribeBtn.disabled = false;
-        els.errorAlert.style.display = 'none';
-        
-        updateFileStatus(file);
-
-        try {
-            console.log('[FILE] Creating object URL...');
-            const objectUrl = URL.createObjectURL(file);
-            console.log('[FILE] Object URL created:', objectUrl);
-            
-            els.videoPreview.src = objectUrl;
-            els.videoPreview.style.display = 'block';
-            console.log('[FILE] Video preview src set and displayed');
-            
-            els.videoPreview.onloadedmetadata = () => {
-                console.log('[VIDEO] Metadata loaded successfully');
-            };
-            
-            els.videoPreview.onerror = (e) => {
-                console.error('[VIDEO] Error loading video:', e);
-            };
-        } catch (error) {
-            console.error('[FILE] Error creating object URL:', error);
-            showToast('Error creating preview: ' + error.message, 'error');
-        }
-    }
 
     els.fileInput.addEventListener('change', (e) => {
-        console.log('[INPUT] Change event fired');
-        console.log('[INPUT] Files:', e.target.files);
-        console.log('[INPUT] Files length:', e.target.files.length);
-        
-        const file = e.target.files[0];
-        if (file) {
-            console.log('[INPUT] File selected:', file.name, file.type, file.size);
-            handleFileSelection(file);
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('video/')) {
+        toast('Пожалуйста, выберите видео файл', 'error');
+        els.fileInput.value = '';
+        return;
+      }
+
+      if (file.size > 20 * 1024 * 1024) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        toast(`Файл слишком большой (${sizeMB} MB). Макс: 20 MB`, 'error');
+        els.fileInput.value = '';
+        return;
+      }
+
+      state.file = file;
+      els.fileName.textContent = file.name;
+      els.fileSize.textContent = formatBytes(file.size);
+      els.videoPreview.src = URL.createObjectURL(file);
+
+      els.uploadLabel.classList.add('hidden');
+      els.fileInfo.classList.remove('hidden');
+      els.fileInfo.classList.add('flex');
+
+      resetResults();
+      lucide.createIcons();
+    });
+
+    els.btnRemove.addEventListener('click', () => {
+      state.file = null;
+      els.fileInput.value = '';
+      els.videoPreview.src = '';
+      els.uploadLabel.classList.remove('hidden');
+      els.fileInfo.classList.add('hidden');
+      els.fileInfo.classList.remove('flex');
+      els.processing.classList.add('hidden');
+      els.processing.classList.remove('flex');
+      resetResults();
+    });
+
+    function resetResults() {
+      state.transcription = '';
+      state.translation = '';
+
+      els.transcriptionText.textContent = 'Результат появится здесь...';
+      els.transcriptionText.className = 'text-sm text-slate-400 dark:text-slate-600 italic';
+
+      els.translationText.textContent = 'Результат появится здесь...';
+      els.translationText.className = 'text-sm text-slate-400 dark:text-slate-600 italic';
+
+      els.btnCopySrc.disabled = true;
+      els.btnCopyRu.disabled = true;
+      els.btnSpeakDe.disabled = true;
+      els.btnSpeakRu.disabled = true;
+    }
+
+    els.btnTranscribe.addEventListener('click', async () => {
+      if (!state.apiKey) {
+        toast('Введите API Key', 'error');
+        return;
+      }
+      if (!state.file) {
+        toast('Выберите видео', 'error');
+        return;
+      }
+
+      setProcessing(true, 'Чтение файла...');
+
+      try {
+        const base64 = await fileToBase64(state.file);
+
+        setProcessing(true, 'Транскрибация видео...');
+        const transcription = await callGemini({ mode: 'transcribe', data: base64, mimeType: state.file.type });
+        state.transcription = transcription;
+
+        els.transcriptionText.textContent = transcription;
+        els.transcriptionText.className = 'text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap';
+        els.btnCopySrc.disabled = false;
+        els.btnSpeakDe.disabled = false;
+
+        setProcessing(true, 'Перевод на русский...');
+        const translation = await callGemini({ mode: 'translate', data: transcription, mimeType: null });
+        state.translation = translation;
+
+        els.translationText.textContent = translation;
+        els.translationText.className = 'text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap';
+        els.btnCopyRu.disabled = false;
+        els.btnSpeakRu.disabled = false;
+
+        toast('Готово!', 'success');
+      } catch (err) {
+        console.error(err);
+        toast(err?.message || 'Произошла ошибка', 'error');
+      } finally {
+        setProcessing(false);
+      }
+    });
+
+    function setProcessing(on, text = '') {
+      if (on) {
+        els.uploadLabel.classList.add('hidden');
+        els.fileInfo.classList.add('hidden');
+        els.processing.classList.remove('hidden');
+        els.processing.classList.add('flex');
+        els.processText.textContent = text;
+      } else {
+        els.processing.classList.add('hidden');
+        els.processing.classList.remove('flex');
+        if (state.file) {
+          els.fileInfo.classList.remove('hidden');
+          els.fileInfo.classList.add('flex');
         } else {
-            console.log('[INPUT] No file in event');
+          els.uploadLabel.classList.remove('hidden');
+          els.fileInfo.classList.add('hidden');
+          els.fileInfo.classList.remove('flex');
         }
-    });
+      }
+    }
 
-    els.fileInput.addEventListener('click', (e) => {
-        console.log('[INPUT] Click event fired on file input');
-    });
-    
-    els.dropZone.addEventListener('click', (e) => {
-        console.log('[DROPZONE] Click event fired');
-        if (e.target === els.fileInput) {
-            console.log('[DROPZONE] Click was on file input itself');
-        } else {
-            console.log('[DROPZONE] Click was on drop zone wrapper');
-        }
-    });
+    const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1';
+    const GEMINI_MODEL_CANDIDATES = [
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro-latest'
+    ];
 
-    els.dropZone.addEventListener('dragenter', (e) => {
-        console.log('[DRAG] dragenter event');
-        e.preventDefault();
-        e.stopPropagation();
-        els.dropZone.classList.add('dragover');
-    });
+    async function callGemini({ data, mimeType, mode }) {
+      let parts = [];
+      if (mode === 'transcribe') {
+        parts = [
+          {
+            text:
+              'Transcribe all the speech from this video in German. ' +
+              'Return ONLY the German text transcription, nothing else. ' +
+              'No formatting, no timestamps, no explanations.'
+          },
+          { inlineData: { mimeType, data } }
+        ];
+      } else if (mode === 'translate') {
+        parts = [
+          {
+            text:
+              'Translate the following German text to Russian. ' +
+              'Return ONLY the Russian translation:\n\n' +
+              data
+          }
+        ];
+      } else {
+        throw new Error('Неверный режим запроса');
+      }
 
-    els.dropZone.addEventListener('dragover', (e) => {
-        console.log('[DRAG] dragover event');
-        e.preventDefault();
-        e.stopPropagation();
-        els.dropZone.classList.add('dragover');
-    });
-
-    els.dropZone.addEventListener('dragleave', (e) => {
-        console.log('[DRAG] dragleave event');
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.target === els.dropZone) {
-            els.dropZone.classList.remove('dragover');
-        }
-    });
-
-    els.dropZone.addEventListener('drop', (e) => {
-        console.log('[DRAG] drop event');
-        e.preventDefault();
-        e.stopPropagation();
-        els.dropZone.classList.remove('dragover');
-        
-        console.log('[DRAG] Files in drop:', e.dataTransfer.files);
-        console.log('[DRAG] Files count:', e.dataTransfer.files.length);
-        
-        if (e.dataTransfer.files.length > 0) {
-            const file = e.dataTransfer.files[0];
-            console.log('[DRAG] Processing dropped file:', file.name, file.type, file.size);
-            
-            els.fileInput.files = e.dataTransfer.files;
-            console.log('[DRAG] Assigned files to input element');
-            
-            handleFileSelection(file);
-        } else {
-            console.log('[DRAG] No files in drop event');
-        }
-    });
-
-    els.loadUrlBtn.addEventListener('click', async () => {
-        const url = els.mediaUrl.value.trim();
-        console.log('[URL] Load button clicked, URL:', url);
-        
-        if (!url) {
-            showToast('Enter a URL', 'error');
-            return;
-        }
-
-        if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            showToast('URL must start with http:// or https://', 'error');
-            return;
-        }
-
-        els.loadUrlBtn.disabled = true;
-        els.loadUrlBtn.innerHTML = icons.loader;
-        updateStatus('Fetching URL...');
-
+      let lastErr = null;
+      for (const model of GEMINI_MODEL_CANDIDATES) {
         try {
-            console.log('[URL] Fetching:', url);
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const url = `${GEMINI_API_BASE}/models/${model}:generateContent?key=${encodeURIComponent(state.apiKey)}`;
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts }],
+              safetySettings: [
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+              ]
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const apiMsg = errorData?.error?.message || response.statusText;
+
+            if (response.status === 404 || /not found|not supported/i.test(apiMsg)) {
+              lastErr = new Error(`Модель "${model}" недоступна: ${apiMsg}`);
+              continue;
             }
 
-            console.log('[URL] Response received, status:', response.status);
-            const blob = await response.blob();
-            console.log('[URL] Blob created, size:', blob.size, 'type:', blob.type);
+            throw mapGeminiError(response.status, apiMsg);
+          }
 
-            if (blob.size > MAX_SIZE_MB * 1024 * 1024) {
-                throw new Error(`File too large: ${(blob.size / 1024 / 1024).toFixed(2)} MB (max ${MAX_SIZE_MB} MB)`);
-            }
+          const json = await response.json();
+          const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-            const filename = url.split('/').pop().split('?')[0] || 'media-from-url';
-            const file = new File([blob], filename, { type: blob.type });
-            console.log('[URL] File object created:', file.name, file.type, file.size);
+          if (!text || !text.trim()) {
+            throw new Error('API вернул пустой текст');
+          }
 
-            handleFileSelection(file);
-            showToast('Loaded from URL', 'success');
-            updateStatus('');
+          return text.trim();
+        } catch (e) {
+          lastErr = e;
+          const msg = String(e?.message || '');
+          const isModelProblem = /Модель ".+" недоступна/i.test(msg) || /not found|not supported/i.test(msg);
 
-        } catch (error) {
-            console.error('[URL] Error:', error);
-            let errorMsg = 'Failed to load URL: ' + error.message;
-            
-            if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-                errorMsg = 'CORS error: URL must allow cross-origin requests. Try a different URL or download the file and upload it.';
-            }
-            
-            showToast(errorMsg, 'error');
-            els.errorAlert.textContent = errorMsg;
-            els.errorAlert.style.display = 'block';
-            updateStatus('');
-        } finally {
-            els.loadUrlBtn.disabled = false;
-            els.loadUrlBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+          if (!isModelProblem) throw e;
         }
-    });
+      }
+
+      throw new Error(
+        (lastErr?.message ? `${lastErr.message} ` : '') +
+        'Попробуйте другой API-ключ/проект или включите доступ к нужным моделям в Google AI Studio.'
+      );
+    }
+
+    function mapGeminiError(status, apiMsg) {
+      if (status === 400) return new Error(`Ошибка API (400): ${apiMsg}. Проверьте формат файла/запрос.`);
+      if (status === 401) return new Error(`Не авторизовано (401): ${apiMsg}. Проверьте API ключ.`);
+      if (status === 403) return new Error(`Доступ запрещён (403): ${apiMsg}. Проверьте API ключ/проект/лимиты.`);
+      if (status === 404) return new Error(`Модель/метод не найден (404): ${apiMsg}`);
+      if (status === 413) return new Error(`Слишком большой запрос (413): ${apiMsg}. Попробуйте меньшее видео.`);
+      if (status === 429) return new Error(`Лимит запросов (429): ${apiMsg}. Подождите и повторите.`);
+      return new Error(`Ошибка API (${status}): ${apiMsg}`);
+    }
 
     function fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            console.log('[FILEREADER] Starting FileReader for:', file.name);
-            const reader = new FileReader();
-            
-            reader.onloadstart = () => {
-                console.log('[FILEREADER] Load started');
-            };
-            
-            reader.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percent = ((e.loaded / e.total) * 100).toFixed(0);
-                    console.log('[FILEREADER] Progress:', percent + '%');
-                }
-            };
-            
-            reader.onload = () => {
-                console.log('[FILEREADER] Load complete, result length:', reader.result?.length);
-                resolve(reader.result);
-            };
-            
-            reader.onerror = (error) => {
-                console.error('[FILEREADER] Error:', error);
-                reject(error);
-            };
-            
-            reader.readAsDataURL(file);
-        });
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const base64 = String(reader.result || '').split(',')[1];
+            if (!base64) reject(new Error('Не удалось прочитать файл'));
+            else resolve(base64);
+          } catch {
+            reject(new Error('Ошибка обработки файла'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+        reader.readAsDataURL(file);
+      });
     }
 
-    els.btnPaste.addEventListener('click', async () => {
-        try {
-            const text = await navigator.clipboard.readText();
-            if (text) els.ttsInput.value = text;
-        } catch (err) {
-            showToast('Clipboard access denied', 'error');
-        }
+    els.btnCopySrc.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(state.transcription || '');
+        toast('Скопировано', 'success');
+      } catch {
+        toast('Не удалось скопировать текст', 'error');
+      }
     });
 
-    els.btnClearTTS.addEventListener('click', () => {
-        els.ttsInput.value = '';
-        stopAllAudio();
+    els.btnCopyRu.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(state.translation || '');
+        toast('Скопировано', 'success');
+      } catch {
+        toast('Не удалось скопировать текст', 'error');
+      }
     });
 
-    els.ttsLang.addEventListener('change', populateManualTTSVoices);
+    async function speak(text, voice, btn, icon, loader, textEl) {
+      if (!text) return;
 
-    els.btnSpeakTTS.addEventListener('click', () => {
-        if (isTTSManualSpeaking) {
-            stopAllAudio();
-            return;
-        }
-        const text = els.ttsInput.value;
-        if (!text) return showToast('No text', 'error');
+      if (state.currentAudio) {
+        state.currentAudio.pause();
+        state.currentAudio = null;
+      }
 
-        stopAllAudio();
-        isTTSManualSpeaking = true;
-        els.btnSpeakTTS.textContent = "Stop";
-        els.btnSpeakTTS.classList.replace('btn-primary', 'btn-danger');
+      if (state.isSpeaking) {
+        state.isSpeaking = false;
+        icon.classList.remove('hidden');
+        loader.classList.add('hidden');
+        textEl.textContent = textEl.dataset.original || textEl.textContent;
+        return;
+      }
 
-        const chunks = text.match(/[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g) || [text];
-        let idx = 0;
+      state.isSpeaking = true;
+      icon.classList.add('hidden');
+      loader.classList.remove('hidden');
+      textEl.dataset.original = textEl.textContent;
+      textEl.textContent = 'Генерация...';
 
-        function playChunk() {
-            if (!isTTSManualSpeaking || idx >= chunks.length) {
-                stopAllAudio();
-                return;
-            }
-            const utt = new SpeechSynthesisUtterance(chunks[idx]);
-            const voiceName = els.ttsVoice.value;
-            const sysVoice = synth.getVoices().find(v => v.name === voiceName);
-            if (sysVoice) utt.voice = sysVoice;
-            else if (els.ttsLang.value !== 'auto') utt.lang = els.ttsLang.value;
+      try {
+        const url = `https://api.streamelements.com/kappa/v2/speech?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`;
+        const audio = new Audio(url);
+        state.currentAudio = audio;
 
-            utt.onend = () => { idx++; playChunk(); };
-            utt.onerror = () => { idx++; playChunk(); };
-            synth.speak(utt);
-        }
-        playChunk();
-    });
+        audio.oncanplay = () => { textEl.textContent = 'Воспроизведение...'; };
 
-    function populateManualTTSVoices() {
-        const lang = els.ttsLang.value;
-        const voices = synth.getVoices();
-        els.ttsVoice.innerHTML = '';
-        
-        let filtered = (lang === 'auto') ? voices : voices.filter(v => v.lang.toLowerCase().startsWith(lang));
-        if (filtered.length === 0) filtered = voices;
-
-        filtered.forEach(v => {
-            const opt = document.createElement('option');
-            opt.textContent = `${v.name} (${v.lang})`;
-            opt.value = v.name;
-            els.ttsVoice.appendChild(opt);
-        });
-    }
-
-    function loadVoices() {
-        const browserVoices = synth.getVoices();
-        const geminiVoices = [
-            { name: "Gemini - Kore (AI)", id: "Kore", type: "gemini" },
-            { name: "Gemini - Puck (AI)", id: "Puck", type: "gemini" },
-            { name: "Gemini - Fenrir (AI)", id: "Fenrir", type: "gemini" },
-            { name: "Gemini - Charon (AI)", id: "Charon", type: "gemini" },
-            { name: "Gemini - Aoede (AI)", id: "Aoede", type: "gemini" }
-        ];
-
-        populateVoiceList(browserVoices, geminiVoices, els.voiceDE, 'de');
-        populateVoiceList(browserVoices, geminiVoices, els.voiceRU, 'ru');
-        populateManualTTSVoices();
-    }
-
-    function populateVoiceList(browser, gemini, select, prefix) {
-        select.innerHTML = '';
-        
-        const gGroup = document.createElement('optgroup');
-        gGroup.label = "Gemini AI (High Quality)";
-        gemini.forEach(v => {
-            const opt = document.createElement('option');
-            opt.textContent = v.name;
-            opt.value = v.id;
-            opt.setAttribute('data-type', 'gemini');
-            gGroup.appendChild(opt);
-        });
-        select.appendChild(gGroup);
-
-        const bGroup = document.createElement('optgroup');
-        bGroup.label = "Browser Voices";
-        const filtered = browser.filter(v => v.lang.toLowerCase().startsWith(prefix));
-        filtered.forEach(v => {
-            const opt = document.createElement('option');
-            opt.textContent = `${v.name} (${v.lang})`;
-            opt.value = v.name;
-            opt.setAttribute('data-type', 'browser');
-            bGroup.appendChild(opt);
-        });
-        select.appendChild(bGroup);
-    }
-
-    window.speak = async (textId, selectId, defaultLang, btnId) => {
-        stopAllAudio();
-        const text = document.getElementById(textId).value;
-        if (!text) return showToast('No text', 'error');
-
-        const select = document.getElementById(selectId);
-        const opt = select.selectedOptions[0];
-        const type = opt?.getAttribute('data-type') || 'browser';
-        const btn = document.getElementById(btnId);
-
-        if (type === 'gemini') {
-            const apiKey = localStorage.getItem('gemini-api-key');
-            if (!apiKey) {
-                showToast("AI Voice requires API Key", 'error');
-                return;
-            }
-            const voiceName = opt.value;
-            btn.innerHTML = `${icons.loader} Loading...`;
-            btn.disabled = true;
-
-            try {
-                await callGeminiTTS(apiKey, text, voiceName);
-            } catch (e) {
-                console.warn("Gemini TTS Failed, using browser fallback", e);
-                showToast("AI Voice failed, using browser voice", "error");
-                fallbackBrowserSpeak(text, defaultLang);
-            } finally {
-                btn.innerHTML = 'Озвучить';
-                btn.disabled = false;
-            }
-        } else {
-            fallbackBrowserSpeak(text, defaultLang, opt?.value);
-        }
-    };
-
-    function fallbackBrowserSpeak(text, lang, voiceName) {
-        const utt = new SpeechSynthesisUtterance(text);
-        utt.lang = lang;
-        if (voiceName) {
-            const v = synth.getVoices().find(vo => vo.name === voiceName);
-            if (v) utt.voice = v;
-        }
-        synth.speak(utt);
-    }
-
-    async function callGeminiTTS(key, text, voiceName) {
-        const ttsModel = "gemini-2.0-flash-exp"; 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${key}`;
-        
-        const options = {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: text }] }],
-                generationConfig: {
-                    responseModalities: ["AUDIO"],
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
-                }
-            })
+        audio.onended = () => {
+          state.isSpeaking = false;
+          icon.classList.remove('hidden');
+          loader.classList.add('hidden');
+          textEl.textContent = textEl.dataset.original || 'Озвучить';
+          state.currentAudio = null;
         };
 
-        const data = await fetchWithRetry(url, options);
+        audio.onerror = () => {
+          toast('Ошибка озвучки', 'error');
+          state.isSpeaking = false;
+          icon.classList.remove('hidden');
+          loader.classList.add('hidden');
+          textEl.textContent = textEl.dataset.original || 'Озвучить';
+          state.currentAudio = null;
+        };
 
-        const b64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (!b64) throw new Error("No audio data");
-
-        activeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const binary = atob(b64);
-        const len = binary.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-        const float32 = new Float32Array(new Int16Array(bytes.buffer).length);
-        const int16 = new Int16Array(bytes.buffer);
-        for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768.0;
-
-        const buffer = activeAudioContext.createBuffer(1, float32.length, 24000);
-        buffer.getChannelData(0).set(float32);
-        
-        activeSourceNode = activeAudioContext.createBufferSource();
-        activeSourceNode.buffer = buffer;
-        activeSourceNode.connect(activeAudioContext.destination);
-        activeSourceNode.start();
+        await audio.play();
+      } catch {
+        toast('Ошибка озвучки', 'error');
+        state.isSpeaking = false;
+        icon.classList.remove('hidden');
+        loader.classList.add('hidden');
+        textEl.textContent = textEl.dataset.original || 'Озвучить';
+      }
     }
-</script>
+
+    els.btnSpeakDe.addEventListener('click', () => {
+      speak(state.transcription, els.voiceDe.value, els.btnSpeakDe, els.iconSpeakDe, els.loaderDe, els.textSpeakDe);
+    });
+
+    els.btnSpeakRu.addEventListener('click', () => {
+      speak(state.translation, els.voiceRu.value, els.btnSpeakRu, els.iconSpeakRu, els.loaderRu, els.textSpeakRu);
+    });
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + ['B', 'KB', 'MB', 'GB'][i];
+    }
+
+    function toast(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className =
+        `fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium z-50 ` +
+        (type === 'error' ? 'bg-rose-500' : type === 'success' ? 'bg-emerald-500' : 'bg-indigo-500');
+      div.textContent = msg;
+      document.body.appendChild(div);
+
+      setTimeout(() => {
+        div.style.opacity = '0';
+        div.style.transition = 'opacity 300ms';
+        setTimeout(() => div.remove(), 300);
+      }, 3000);
+    }
+  </script>
 </body>
 </html>
